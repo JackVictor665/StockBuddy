@@ -35,7 +35,24 @@ class ProductCreate(SQLModel):
     lead_time_days: int = 7
 
 
+class ProductUpdate(SQLModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    sku: Optional[str] = None
+    cost_price: Optional[float] = None
+    selling_price: Optional[float] = None
+    current_stock: Optional[int] = None
+    min_stock_alert: Optional[int] = None
+    lead_time_days: Optional[int] = None
+
+
 class SaleCreate(SQLModel):
     product_id: int
     quantity_sold: int = Field(gt=0)
+    sale_price: Optional[float] = None
+
+
+class SaleUpdate(SQLModel):
+    product_id: Optional[int] = None
+    quantity_sold: Optional[int] = Field(default=None, gt=0)
     sale_price: Optional[float] = None

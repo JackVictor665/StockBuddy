@@ -612,6 +612,35 @@ td strong {
   background: var(--orange);
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.actions form {
+  margin: 0;
+}
+
+.action-link {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font: 500 9px 'DM Mono', monospace;
+  text-decoration: none;
+  padding: 0;
+}
+
+.action-link:hover {
+  text-decoration: underline;
+}
+
+.danger-action {
+  color: var(--orange);
+}
+
 /* =========================
    RESPONSIVE
 ========================= */

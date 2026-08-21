@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from analytics import get_profit_forecast, get_profit_projections, get_restock_recommendations, get_stock_depletion_forecast
 from database import get_session, init_db
-from models import Product, ProductCreate, Sale, SaleCreate
+from models import Product, ProductCreate, ProductUpdate, Sale, SaleCreate, SaleUpdate
 from seed_data import seed
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -47,6 +47,32 @@ def add_product(product: ProductCreate, session: SessionDep):
     return record
 
 
+@app.put("/api/products/{product_id}", response_model=Product)
+def update_product(product_id: int, product: ProductUpdate, session: SessionDep):
+    record = session.get(Product, product_id)
+    if not record:
+        raise HTTPException(404, "Product not found")
+    if product.sku and session.exec(select(Product).where(Product.sku == product.sku, Product.id != product_id)).first():
+        raise HTTPException(409, "SKU already exists")
+    for field, value in product.model_dump(exclude_unset=True).items():
+        setattr(record, field, value)
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+@app.delete("/api/products/{product_id}", status_code=204)
+def delete_product(product_id: int, session: SessionDep):
+    record = session.get(Product, product_id)
+    if not record:
+        raise HTTPException(404, "Product not found")
+    for sale in session.exec(select(Sale).where(Sale.product_id == product_id)).all():
+        session.delete(sale)
+    session.delete(record)
+    session.commit()
+
+
 @app.post("/api/sales", response_model=Sale, status_code=201)
 def record_sale(sale: SaleCreate, session: SessionDep):
     product = session.get(Product, sale.product_id)
@@ -61,6 +87,49 @@ def record_sale(sale: SaleCreate, session: SessionDep):
     session.commit()
     session.refresh(record)
     return record
+
+
+@app.put("/api/sales/{sale_id}", response_model=Sale)
+def update_sale(sale_id: int, sale: SaleUpdate, session: SessionDep):
+    record = session.get(Sale, sale_id)
+    if not record:
+        raise HTTPException(404, "Sale not found")
+    old_product = session.get(Product, record.product_id)
+    new_product = session.get(Product, sale.product_id or record.product_id)
+    new_quantity = sale.quantity_sold if sale.quantity_sold is not None else record.quantity_sold
+    if not new_product:
+        raise HTTPException(404, "Product not found")
+    if old_product.id == new_product.id:
+        available = old_product.current_stock + record.quantity_sold
+        if new_quantity > available:
+            raise HTTPException(400, "Insufficient stock")
+        old_product.current_stock = available - new_quantity
+    else:
+        old_product.current_stock += record.quantity_sold
+        if new_quantity > new_product.current_stock:
+            raise HTTPException(400, "Insufficient stock")
+        new_product.current_stock -= new_quantity
+    record.product_id = new_product.id
+    record.quantity_sold = new_quantity
+    if sale.sale_price is not None:
+        record.sale_price = sale.sale_price
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
+
+
+@app.delete("/api/sales/{sale_id}", status_code=204)
+def delete_sale(sale_id: int, session: SessionDep):
+    record = session.get(Sale, sale_id)
+    if not record:
+        raise HTTPException(404, "Sale not found")
+    product = session.get(Product, record.product_id)
+    if product:
+        product.current_stock += record.quantity_sold
+        session.add(product)
+    session.delete(record)
+    session.commit()
 
 
 @app.get("/api/forecast")
@@ -94,6 +163,26 @@ def create_inventory_item(name: str = Form(...), category: str = Form(...), sku:
     return RedirectResponse("/inventory", status_code=303)
 
 
+@app.get("/inventory/{product_id}/edit", response_class=HTMLResponse)
+def edit_inventory_page(product_id: int, request: Request, session: SessionDep):
+    product = session.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "Product not found")
+    return templates.TemplateResponse(request=request, name="edit_inventory.html", context={"request": request, "product": product})
+
+
+@app.post("/inventory/{product_id}/edit")
+def edit_inventory(product_id: int, name: str = Form(...), category: str = Form(...), sku: str = Form(...), cost_price: float = Form(...), selling_price: float = Form(...), current_stock: int = Form(...), min_stock_alert: int = Form(...), lead_time_days: int = Form(...), session: Session = Depends(get_session)):
+    update_product(product_id, ProductUpdate(name=name, category=category, sku=sku, cost_price=cost_price, selling_price=selling_price, current_stock=current_stock, min_stock_alert=min_stock_alert, lead_time_days=lead_time_days), session)
+    return RedirectResponse("/inventory", status_code=303)
+
+
+@app.post("/inventory/{product_id}/delete")
+def remove_inventory(product_id: int, session: SessionDep):
+    delete_product(product_id, session)
+    return RedirectResponse("/inventory", status_code=303)
+
+
 @app.get("/forecasting", response_class=HTMLResponse)
 def forecasting(request: Request, session: SessionDep, horizon_days: int = 30):
     if horizon_days not in (3, 7, 30, 90):
@@ -114,4 +203,25 @@ def create_sale(product_id: int = Form(...), quantity_sold: int = Form(...), ses
     product.current_stock -= quantity_sold
     session.add(Sale(product_id=product_id, quantity_sold=quantity_sold, sale_price=product.selling_price))
     session.commit()
+    return RedirectResponse("/sales", status_code=303)
+
+
+@app.get("/sales/{sale_id}/edit", response_class=HTMLResponse)
+def edit_sale_page(sale_id: int, request: Request, session: SessionDep):
+    sale = session.get(Sale, sale_id)
+    if not sale:
+        raise HTTPException(404, "Sale not found")
+    products = session.exec(select(Product).order_by(Product.name)).all()
+    return templates.TemplateResponse(request=request, name="edit_sale.html", context={"request": request, "sale": sale, "products": products})
+
+
+@app.post("/sales/{sale_id}/edit")
+def edit_sale(sale_id: int, product_id: int = Form(...), quantity_sold: int = Form(...), sale_price: float = Form(...), session: Session = Depends(get_session)):
+    update_sale(sale_id, SaleUpdate(product_id=product_id, quantity_sold=quantity_sold, sale_price=sale_price), session)
+    return RedirectResponse("/sales", status_code=303)
+
+
+@app.post("/sales/{sale_id}/delete")
+def remove_sale(sale_id: int, session: SessionDep):
+    delete_sale(sale_id, session)
     return RedirectResponse("/sales", status_code=303)
