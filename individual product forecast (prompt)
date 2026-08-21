@@ -1,0 +1,16 @@
+Rebuild the individual product forecast section.
+
+Requirements:
+- Add a product dropdown so users can select an individual item.
+- Use that product’s historical sales data to generate its forecast.
+- Keep only one forecast horizon: 30 days.
+- Remove the 7-day and 14-day options.
+- Show the predicted sales amount for every day of the 30-day forecast in a clear table.
+- Show the predicted stock remaining for each day.
+- Add a line graph showing predicted stock depletion over the 30 days.
+- Make it clear on which day the product is expected to run out of stock.
+- Display useful summary metrics such as daily sales velocity, sales trend, confidence range, and days until stockout.
+- Remove the separate “Last 7 Days Sales History” graph.
+- Keep the existing application styling and ensure the section is readable on desktop and mobile.
+- Use the existing forecasting logic and API patterns where possible.
+- Verify that the page renders without errors and that changing the selected product updates the forecast correctly.
