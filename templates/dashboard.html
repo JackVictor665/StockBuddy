@@ -1,6 +1,94 @@
-{% extends 'base.html' %}{% block title %}Overview{% endblock %}{% block heading %}Good morning, operator.{% endblock %}
-{% block content %}
-<div class="intro-row"><p class="lede">A live read on your hardware floor, tuned for the decisions that keep builds moving.</p><span class="date-chip">● LIVE / LAST 30 DAYS</span></div>
-<div class="stat-grid"><div class="stat-card lime"><span>STOCK AT COST</span><strong>€{{ '%.0f'|format(total_stock_value) }}</strong><small>Capital currently on shelf</small></div><div class="stat-card"><span>PROJECTED PROFIT</span><strong>€{{ '%.0f'|format(projected_profit) }}</strong><small>Rolling 30-day estimate</small></div><div class="stat-card"><span>RESTOCK SIGNALS</span><strong>{{ low_stock_count }}</strong><small>Items need attention</small></div><div class="stat-card"><span>SKUs TRACKED</span><strong>{{ products|length }}</strong><small>Across {{ products|map(attribute='category')|unique|list|length }} categories</small></div></div>
-<div class="content-grid"><section class="panel"><div class="panel-head"><div><span class="eyebrow">PRIORITY QUEUE</span><h2>Depletion watch</h2></div><a href="/forecasting" class="text-link">View forecast ↗</a></div><div class="table-wrap"><table><thead><tr><th>Component</th><th>Velocity</th><th>Days left</th><th>Signal</th></tr></thead><tbody>{% for item in forecast[:6] %}<tr><td><strong>{{ item.product.name }}</strong><small>{{ item.product.sku }}</small></td><td>{{ item.daily_velocity }} / day</td><td class="days {% if item.days_until_out_of_stock < 7 %}urgent{% endif %}">{% if item.days_until_out_of_stock == 999 %}—{% else %}{{ item.days_until_out_of_stock }}d{% endif %}</td><td>{% if item.days_until_out_of_stock < 7 %}<span class="pill warn">REORDER</span>{% else %}<span class="pill good">HEALTHY</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div></section><section class="panel accent-panel"><span class="eyebrow">MARGIN LEADERS</span><h2>Where profit lands</h2>{% for item in profits[:4] %}<div class="margin-row"><div><strong>{{ item.product.name }}</strong><small>{{ item.units }} units / €{{ '%.0f'|format(item.monthly_profit) }} profit</small></div><b>{{ item.margin }}%</b></div>{% endfor %}</section></div>
+{% extends 'base.html' %}{% block title %}Overview{% endblock %}{% block heading
+%}Good morning, operator.{% endblock %} {% block content %}
+<div class="intro-row">
+  <p class="lede">
+    A live read on your hardware floor, tuned for the decisions that keep builds
+    moving.
+  </p>
+  <span class="date-chip">● LIVE / LAST 30 DAYS</span>
+</div>
+<div class="stat-grid">
+  <div class="stat-card lime">
+    <span>STOCK AT COST</span
+    ><strong>R{{ '%.0f'|format(total_stock_value) }}</strong
+    ><small>Capital currently on shelf</small>
+  </div>
+  <div class="stat-card">
+    <span>PROJECTED PROFIT</span
+    ><strong>R{{ '%.0f'|format(projected_profit) }}</strong
+    ><small>Rolling 30-day estimate</small>
+  </div>
+  <div class="stat-card">
+    <span>RESTOCK SIGNALS</span><strong>{{ low_stock_count }}</strong
+    ><small>Items need attention</small>
+  </div>
+  <div class="stat-card">
+    <span>SKUs TRACKED</span><strong>{{ products|length }}</strong
+    ><small
+      >Across {{ products|map(attribute='category')|unique|list|length }}
+      categories</small
+    >
+  </div>
+</div>
+<div class="content-grid">
+  <section class="panel">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">PRIORITY QUEUE</span>
+        <h2>Depletion watch</h2>
+      </div>
+      <a href="/forecasting" class="text-link">View forecast ↗</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Velocity</th>
+            <th>Days left</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in forecast[:6] %}
+          <tr>
+            <td>
+              <strong>{{ item.product.name }}</strong
+              ><small>{{ item.product.sku }}</small>
+            </td>
+            <td>{{ item.daily_velocity }} / day</td>
+            <td
+              class="days {% if item.days_until_out_of_stock < 7 %}urgent{% endif %}"
+            >
+              {% if item.days_until_out_of_stock == 999 %}—{% else %}{{
+              item.days_until_out_of_stock }}d{% endif %}
+            </td>
+            <td>
+              {% if item.days_until_out_of_stock < 7 %}<span class="pill warn"
+                >REORDER</span
+              >{% else %}<span class="pill good">HEALTHY</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <section class="panel accent-panel">
+    <span class="eyebrow">MARGIN LEADERS</span>
+    <h2>Where profit lands</h2>
+    {% for item in profits[:4] %}
+    <div class="margin-row">
+      <div>
+        <strong>{{ item.product.name }}</strong
+        ><small
+          >{{ item.units }} units / R{{ '%.0f'|format(item.monthly_profit) }}
+          profit</small
+        >
+      </div>
+      <b>{{ item.margin }}%</b>
+    </div>
+    {% endfor %}
+  </section>
+</div>
 {% endblock %}

@@ -15,6 +15,7 @@ from seed_data import seed
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="StockBuddy", description="PC hardware inventory intelligence")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+app.mount("/resources", StaticFiles(directory=BASE_DIR / "resources"), name="resources")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 SessionDep = Annotated[Session, Depends(get_session)]
 
