@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 from analytics import get_profit_forecast, get_profit_projections, get_restock_recommendations, get_stock_depletion_forecast
 from database import get_session, init_db
 from models import Product, ProductCreate, Sale, SaleCreate
+from seed_data import seed
 
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="StockBuddy", description="PC hardware inventory intelligence")
@@ -21,6 +22,12 @@ SessionDep = Annotated[Session, Depends(get_session)]
 @app.on_event("startup")
 def startup() -> None:
     init_db()
+    seed()
+
+
+@app.get("/healthz")
+def health_check():
+    return {"status": "ok", "service": "stockbuddy"}
 
 
 @app.get("/api/products", response_model=list[Product])

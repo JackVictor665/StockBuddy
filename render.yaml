@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: stockbuddy
+    runtime: docker
+    healthCheckPath: /healthz
+    plan: free
