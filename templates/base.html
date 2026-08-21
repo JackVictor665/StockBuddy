@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}StockBuddy{% endblock %} / StockBuddy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7"></script>
+  <link rel="stylesheet" href="{{ url_for('static', path='custom.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a href="/" class="brand"><span class="brand-mark">+</span><span>stockbuddy</span></a>
+      <p class="eyebrow">OPERATIONS / 01</p>
+      <nav>
+        <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}"><span>◈</span> Overview</a>
+        <a href="/inventory" class="nav-link {% if request.url.path == '/inventory' %}active{% endif %}"><span>▦</span> Inventory</a>
+        <a href="/forecasting" class="nav-link {% if request.url.path == '/forecasting' %}active{% endif %}"><span>↗</span> Forecasting</a>
+        <a href="/sales" class="nav-link {% if request.url.path == '/sales' %}active{% endif %}"><span>⌁</span> Sales log</a>
+      </nav>
+      <div class="sidebar-foot"><div class="status-dot"></div><div><strong>Local workspace</strong><small>SQLite connected</small></div></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><span class="breadcrumb">STOCKBUDDY / {{ self.title()|upper }}</span><h1>{% block heading %}{% endblock %}</h1></div><a class="api-link" href="/docs" target="_blank">API DOCS ↗</a></header>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

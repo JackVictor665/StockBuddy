@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pandas
+jinja2
+python-multipart
