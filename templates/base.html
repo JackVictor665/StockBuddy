@@ -19,7 +19,7 @@
         <a href="/forecasting" class="nav-link {% if request.url.path == '/forecasting' %}active{% endif %}"><span>↗</span> Forecasting</a>
         <a href="/sales" class="nav-link {% if request.url.path == '/sales' %}active{% endif %}"><span>⌁</span> Sales log</a>
       </nav>
-      <div class="sidebar-foot"><div class="status-dot"></div><div><strong>Local workspace</strong><small>SQLite connected</small></div></div>
+      <div class="sidebar-foot"><div class="status-dot"></div><div><strong>Local workspace</strong><small>SQLite connected</small></div><form method="post" action="/logout"><button class="logout-button" type="submit">LOG OUT</button></form></div>
     </aside>
     <main class="main-content">
       <header class="topbar"><div><span class="breadcrumb">STOCKBUDDY / {{ self.title()|upper }}</span><h1>{% block heading %}{% endblock %}</h1></div><a class="api-link" href="/docs" target="_blank">API DOCS ↗</a></header>

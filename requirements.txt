@@ -4,3 +4,4 @@ sqlmodel
 pandas
 jinja2
 python-multipart
+itsdangerous

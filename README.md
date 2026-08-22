@@ -22,6 +22,8 @@ The demo seeds representative PC hardware and historical transactions automatica
 
 The `/healthz` endpoint is available for deployment checks and `/docs` contains the interactive API documentation.
 
+Set a strong random `SESSION_SECRET` environment variable in Render before sharing the app publicly. The local fallback is intended only for the demo environment.
+
 ## Run locally
 
 ```powershell

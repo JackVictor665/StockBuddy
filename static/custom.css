@@ -25,7 +25,10 @@ body {
 
 .shell {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 36px);
+  margin: 18px 18px 18px 0;
+  overflow: hidden;
+  border-radius: 0 8px 8px 0;
 }
 
 /* =========================
@@ -726,4 +729,94 @@ td strong {
     gap: 15px;
     flex-direction: column;
   }
+}
+
+.logout-button {
+  border: 1px solid #4a5042;
+  background: transparent;
+  color: #aeb3a8;
+  cursor: pointer;
+  font: 500 9px 'DM Mono', monospace;
+  padding: 7px 8px;
+}
+
+.logout-button:hover {
+  color: #fff;
+  border-color: var(--lime);
+}
+
+.auth-body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ink);
+}
+
+.auth-card {
+  width: min(100%, 430px);
+  background: #fff;
+  padding: 38px;
+}
+
+.auth-brand {
+  color: var(--ink);
+  margin-bottom: 54px;
+}
+
+.auth-card h1 {
+  margin-top: 10px;
+}
+
+.auth-card .lede {
+  margin: 12px 0 24px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font: 500 10px 'DM Mono', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.auth-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 13px;
+  color: var(--ink);
+  font: 14px 'Space Grotesk', sans-serif;
+  text-transform: none;
+}
+
+.auth-form .button {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.form-error {
+  border-left: 3px solid var(--orange);
+  background: #fff0ea;
+  color: #a84729;
+  padding: 11px 13px;
+  margin: 18px 0;
+  font-size: 12px;
+}
+
+.auth-switch {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 22px 0 0;
+}
+
+.auth-switch a {
+  color: #000;
+  font-weight: 600;
 }

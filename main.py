@@ -1,3 +1,7 @@
+import hashlib
+import hmac
+import os
+import secrets
 from pathlib import Path
 from typing import Annotated
 
@@ -5,11 +9,12 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 from sqlmodel import Session, select
 
 from analytics import get_profit_forecast, get_profit_projections, get_restock_recommendations, get_stock_depletion_forecast
-from database import get_session, init_db
-from models import Product, ProductCreate, ProductUpdate, Sale, SaleCreate, SaleUpdate
+from database import engine, get_session, init_db
+from models import Product, ProductCreate, ProductUpdate, Sale, SaleCreate, SaleUpdate, User
 from seed_data import seed
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -18,12 +23,100 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 app.mount("/resources", StaticFiles(directory=BASE_DIR / "resources"), name="resources")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 SessionDep = Annotated[Session, Depends(get_session)]
+PUBLIC_PATHS = ("/login", "/signup", "/healthz", "/static", "/resources", "/docs", "/openapi.json", "/redoc")
+
+
+def hash_password(password: str, salt: str | None = None) -> str:
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000).hex()
+    return f"{salt}${digest}"
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    salt, expected = stored_hash.split("$", 1)
+    actual = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000).hex()
+    return hmac.compare_digest(actual, expected)
+
+
+def current_user(request: Request, session: Session) -> User:
+    user_id = request.session.get("user_id")
+    user = session.get(User, user_id) if user_id else None
+    if not user:
+        raise HTTPException(401, "Authentication required")
+    return user
+
+
+@app.middleware("http")
+async def require_authentication(request: Request, call_next):
+    if request.url.path == "/favicon.ico" or request.url.path.startswith(PUBLIC_PATHS):
+        return await call_next(request)
+    user_id = request.session.get("user_id")
+    with Session(engine) as session:
+        if not user_id or not session.get(User, user_id):
+            if request.url.path.startswith("/api/"):
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail": "Authentication required"}, status_code=401)
+            return RedirectResponse(url=f"/login?next={request.url.path}", status_code=303)
+    return await call_next(request)
+
+
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "stockbuddy-demo-secret-change-me"))
 
 
 @app.on_event("startup")
 def startup() -> None:
     init_db()
     seed()
+    with Session(engine) as session:
+        if not session.exec(select(User).where(User.username == "admin")).first():
+            session.add(User(username="admin", password_hash=hash_password("admin123")))
+            session.commit()
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, error: str | None = None):
+    return templates.TemplateResponse(request=request, name="login.html", context={"request": request, "error": error})
+
+
+@app.post("/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...), next_url: str = Form("/"), session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.username == username.strip())).first()
+    if not user or not verify_password(password, user.password_hash):
+        return templates.TemplateResponse(request=request, name="login.html", context={"request": request, "error": "Invalid username or password."}, status_code=401)
+    request.session["user_id"] = user.id
+    destination = next_url if next_url.startswith("/") and not next_url.startswith("//") else "/"
+    return RedirectResponse(destination, status_code=303)
+
+
+@app.get("/signup", response_class=HTMLResponse)
+def signup_page(request: Request, error: str | None = None):
+    return templates.TemplateResponse(request=request, name="signup.html", context={"request": request, "error": error})
+
+
+@app.post("/signup")
+def signup(request: Request, username: str = Form(...), password: str = Form(...), confirm_password: str = Form(...), session: Session = Depends(get_session)):
+    username = username.strip()
+    if not username or len(username) < 3:
+        error = "Username must be at least 3 characters."
+    elif len(password) < 6:
+        error = "Password must be at least 6 characters."
+    elif password != confirm_password:
+        error = "Passwords do not match."
+    elif session.exec(select(User).where(User.username == username)).first():
+        error = "That username is already in use."
+    else:
+        user = User(username=username, password_hash=hash_password(password))
+        session.add(user)
+        session.commit()
+        request.session["user_id"] = user.id
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse(request=request, name="signup.html", context={"request": request, "error": error}, status_code=400)
+
+
+@app.post("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 
 @app.get("/healthz")
