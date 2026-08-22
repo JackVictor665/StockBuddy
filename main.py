@@ -158,6 +158,8 @@ def inventory(request: Request, session: SessionDep):
 
 @app.post("/inventory", response_class=HTMLResponse)
 def create_inventory_item(name: str = Form(...), category: str = Form(...), sku: str = Form(...), cost_price: float = Form(...), selling_price: float = Form(...), current_stock: int = Form(...), min_stock_alert: int = Form(...), lead_time_days: int = Form(...), session: Session = Depends(get_session)):
+    if session.exec(select(Product).where(Product.sku == sku)).first():
+        raise HTTPException(409, "SKU already exists")
     session.add(Product(name=name, category=category, sku=sku, cost_price=cost_price, selling_price=selling_price, current_stock=current_stock, min_stock_alert=min_stock_alert, lead_time_days=lead_time_days))
     session.commit()
     return RedirectResponse("/inventory", status_code=303)

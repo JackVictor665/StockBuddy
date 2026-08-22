@@ -28,7 +28,7 @@ heading %}Edit hardware{% endblock %}{% block content %}
       required
     /><select name="category">
       {% for category in ['GPU', 'CPU', 'RAM', 'Storage', 'PSU'] %}
-      <option {% if product.category="" ="category" %}selected{% endif %}>
+      <option {% if product.category == category %}selected{% endif %}>
         {{ category }}
       </option>
       {% endfor %}</select
